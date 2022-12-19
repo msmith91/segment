@@ -245,18 +245,6 @@ diffs as (
 
 ),
 
-diffs as (
-
-    select
-
-        *,
-
-        {{ dbt.datediff('session_start_tstamp', 'session_end_tstamp', 'second') }} as duration_in_s
-
-    from agg
-
-),
-
 tiers as (
 
     select
