@@ -15,34 +15,55 @@
     rows between unbounded preceding and unbounded following
     " %}
 
-{% set first_values = {
+{% set first_values1 = {
     'utm_source' : 'utm_source',
     'utm_content' : 'utm_content',
+    } %}
+{% set first_values2 = {
     'utm_medium' : 'utm_medium',
-    'utm_campaign' : 'utm_campaign',
+    'utm_campaign' : 'utm_campaign'
+    } %}
+{% set first_values3 = {
     'utm_term' : 'utm_term',
     'gclid' : 'gclid',
-    'page_url' : 'first_page_url',
+    'page_url' : 'first_page_url'
+    } %}
+{% set first_values4 = {
     'page_url_host' : 'first_page_url_host',
     'page_url_path' : 'first_page_url_path',
-    'page_url_query' : 'first_page_url_query',
+    'page_url_query' : 'first_page_url_query'
+    } %}
+{% set first_values5 = {
     'referrer' : 'referrer',
-    'referrer_host' : 'referrer_host',
+    'referrer_host' : 'referrer_host'
+    } %}
+
+{% set first_values6 = {
     'device' : 'device',
     'device_category' : 'device_category'
     } %}
 
-{% set last_values = {
-    'page_url' : 'last_page_url',
-    'page_url_host' : 'last_page_url_host',
-    'page_url_path' : 'last_page_url_path',
-    'page_url_query' : 'last_page_url_query'
+{% set last_values1 = {
+        'page_url' : 'last_page_url',
+        'page_url_host' : 'last_page_url_host' 
+    } %}
+
+ {% set last_values2 = {
+        'page_url_path' : 'last_page_url_path',
+        'page_url_query' : 'last_page_url_query'
     } %}
 
 {% for col in var('segment_pass_through_columns') %}
-    {% do first_values.update({col: 'first_' ~ col}) %}
-    {% do last_values.update({col: 'last_' ~ col}) %}
+    {% do first_values1.update({col: 'first_' ~ col}) %}
+    {% do first_values2.update({col: 'first_' ~ col}) %}
+    {% do first_values3.update({col: 'first_' ~ col}) %}
+    {% do first_values4.update({col: 'first_' ~ col}) %}
+    {% do first_values5.update({col: 'first_' ~ col}) %}
+    {% do first_values6.update({col: 'first_' ~ col}) %}
+    {% do last_values1.update({col: 'last_' ~ col}) %}
+    {% do last_values2.update({col: 'last_' ~ col}) %}
 {% endfor %}
+
 
 with pageviews_sessionized as (
 
@@ -62,7 +83,7 @@ referrer_mapping as (
 
 ),
 
-agg as (
+agg_first as (
 
     select distinct
 
@@ -70,17 +91,157 @@ agg as (
         anonymous_id,
         min(tstamp) over ( {{partition_by}} ) as session_start_tstamp,
         max(tstamp) over ( {{partition_by}} ) as session_end_tstamp,
-        count(*) over ( {{partition_by}} ) as page_views,
+        count(*) over ( {{partition_by}} ) as page_views
 
-        {% for (key, value) in first_values.items() %}
+    from pageviews_sessionized
+
+),
+agg_first1 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in first_values1.items() %}
         first_value({{key}}) over ({{window_clause}}) as {{value}},
         {% endfor %}
 
-        {% for (key, value) in last_values.items() %}
+    from pageviews_sessionized
+
+),
+agg_first2 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in first_values2.items() %}
+        first_value({{key}}) over ({{window_clause}}) as {{value}},
+        {% endfor %}
+
+    from pageviews_sessionized
+
+),
+agg_first3 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in first_values3.items() %}
+        first_value({{key}}) over ({{window_clause}}) as {{value}},
+        {% endfor %}
+
+    from pageviews_sessionized
+
+),
+agg_first4 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in first_values4.items() %}
+        first_value({{key}}) over ({{window_clause}}) as {{value}},
+        {% endfor %}
+
+    from pageviews_sessionized
+
+),
+agg_first5 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in first_values5.items() %}
+        first_value({{key}}) over ({{window_clause}}) as {{value}},
+        {% endfor %}
+
+    from pageviews_sessionized
+
+),
+agg_first6 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in first_values6.items() %}
+        first_value({{key}}) over ({{window_clause}}) as {{value}},
+        {% endfor %}
+
+    from pageviews_sessionized
+
+),
+agg_last1 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in last_values1.items() %}
         last_value({{key}}) over ({{window_clause}}) as {{value}}{% if not loop.last %},{% endif %}
         {% endfor %}
 
     from pageviews_sessionized
+
+),
+agg_last2 as (
+
+    select distinct
+
+        session_id,
+        anonymous_id,
+
+        {% for (key, value) in last_values2.items() %}
+        last_value({{key}}) over ({{window_clause}}) as {{value}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+
+    from pageviews_sessionized
+
+),
+
+diffs as (
+
+    select
+
+        af.*,
+        af1.* except (session_id, anonymous_id),
+        af2.* except (session_id, anonymous_id),
+        af3.* except (session_id, anonymous_id),
+        af4.* except (session_id, anonymous_id),
+        af5.* except (session_id, anonymous_id),
+        af6.* except (session_id, anonymous_id),
+        al1.* except (session_id, anonymous_id),
+        al2.* except (session_id, anonymous_id),
+
+        {{ dbt_utils.datediff('session_start_tstamp', 'session_end_tstamp', 'second') }} as duration_in_s
+
+    from agg_first af
+    left join agg_first1 af1
+        on af.session_id = af1.session_id AND af.anonymous_id = af1.anonymous_id
+    left join agg_first2 af2
+        on af.session_id = af2.session_id AND af.anonymous_id = af2.anonymous_id
+    left join agg_first3 af3
+        on af.session_id = af3.session_id AND af.anonymous_id = af3.anonymous_id
+    left join agg_first4 af4
+        on af.session_id = af4.session_id AND af.anonymous_id = af4.anonymous_id
+    left join agg_first5 af5
+        on af.session_id = af5.session_id AND af.anonymous_id = af5.anonymous_id
+    left join agg_first6 af6
+        on af.session_id = af6.session_id AND af.anonymous_id = af6.anonymous_id
+    left join agg_last1 al1
+        on af.session_id = al1.session_id AND af.anonymous_id = al1.anonymous_id
+    left join agg_last2 al2
+        on af.session_id = al2.session_id AND af.anonymous_id = al2.anonymous_id
 
 ),
 
