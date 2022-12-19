@@ -223,7 +223,7 @@ diffs as (
         al1.* except (session_id, anonymous_id),
         al2.* except (session_id, anonymous_id),
 
-        {{ dbt_utils.datediff('session_start_tstamp', 'session_end_tstamp', 'second') }} as duration_in_s
+        {{ dbt.datediff('session_start_tstamp', 'session_end_tstamp', 'second') }} as duration_in_s
 
     from agg_first af
     left join agg_first1 af1
